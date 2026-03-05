@@ -18,13 +18,11 @@
             flex-direction: column;
             height: 100vh;
         }
-        /* Main layout */
         .container {
             display: flex;
             flex: 1;
             overflow: hidden;
         }
-        /* Sidebar */
         .sidebar {
             width: 240px;
             background: #000;
@@ -52,7 +50,6 @@
         .sidebar li:hover {
             color: white;
         }
-        /* Main content */
         .main {
             flex: 1;
             background: linear-gradient(180deg, #1f1f1f 0%, #121212 100%);
@@ -63,7 +60,6 @@
             font-size: 32px;
             margin-bottom: 24px;
         }
-        /* Search section */
         .search-section {
             padding: 0 0 20px 0;
             display: flex;
@@ -98,7 +94,6 @@
             opacity: 0.5;
             cursor: not-allowed;
         }
-        /* Song grid */
         .song-list {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
@@ -132,7 +127,6 @@
             color: #b3b3b3;
             font-size: 14px;
         }
-        /* Player bar */
         .player-bar {
             background: #181818;
             border-top: 1px solid #282828;
@@ -215,7 +209,6 @@
         </div>
         <div class="main">
             <h1>Browse</h1>
-            <!-- Search section (Discord‑bot style) -->
             <div class="search-section">
                 <input type="text" id="url-input" placeholder="Search for a song or paste YouTube URL...">
                 <button id="fetch-btn">Fetch & Play</button>
@@ -251,13 +244,11 @@
     </div>
 
     <script>
-        // State
         let songs = [];
         let currentIndex = 0;
         const audio = new Audio();
         let isPlaying = false;
 
-        // DOM elements
         const songListEl = document.getElementById('song-list');
         const playPauseBtn = document.getElementById('play-pause');
         const prevBtn = document.getElementById('prev');
@@ -269,11 +260,9 @@
         const currentTitle = document.getElementById('current-title');
         const currentArtist = document.getElementById('current-artist');
         const currentCover = document.getElementById('current-cover');
-        // Search elements
         const urlInput = document.getElementById('url-input');
         const fetchBtn = document.getElementById('fetch-btn');
 
-        // Fetch static songs from server
         async function loadSongs() {
             try {
                 const res = await fetch('/api/songs');
@@ -284,7 +273,6 @@
             }
         }
 
-        // Render song cards
         function renderSongs() {
             songListEl.innerHTML = songs.map((song, index) => `
                 <div class="song-card" data-index="${index}">
@@ -301,12 +289,11 @@
             });
         }
 
-        // Play song at given index
         function playSong(index) {
             if (index < 0 || index >= songs.length) return;
             currentIndex = index;
             const song = songs[currentIndex];
-            audio.src = song.audioUrl; // e.g., '/audio/song.mp3' or '/downloads/...'
+            audio.src = song.audioUrl;
             audio.load();
             audio.play().then(() => {
                 isPlaying = true;
@@ -315,7 +302,6 @@
             }).catch(e => console.error('Playback failed', e));
         }
 
-        // Update player info
         function updatePlayerInfo() {
             const song = songs[currentIndex];
             if (song) {
@@ -325,7 +311,6 @@
             }
         }
 
-        // Toggle play/pause
         function togglePlay() {
             if (!songs.length) return;
             if (isPlaying) {
@@ -342,21 +327,18 @@
             isPlaying = !isPlaying;
         }
 
-        // Play next
         function playNext() {
             if (songs.length === 0) return;
             const nextIndex = (currentIndex + 1) % songs.length;
             playSong(nextIndex);
         }
 
-        // Play previous
         function playPrev() {
             if (songs.length === 0) return;
             const prevIndex = (currentIndex - 1 + songs.length) % songs.length;
             playSong(prevIndex);
         }
 
-        // Update progress
         function updateProgress() {
             if (audio.duration) {
                 const percent = (audio.currentTime / audio.duration) * 100;
@@ -380,17 +362,14 @@
             audio.currentTime = seekTime;
         }
 
-        // ========== Discord‑bot style search ==========
         async function fetchAndPlay() {
             const query = urlInput.value.trim();
             if (!query) return;
 
-            // Determine if input is a URL or a search term
             let urlToFetch;
             if (query.startsWith('http://') || query.startsWith('https://')) {
-                urlToFetch = query; // it's a URL, use as is
+                urlToFetch = query;
             } else {
-                // Treat as search term: prepend ytsearch:
                 urlToFetch = `ytsearch:${query}`;
             }
 
@@ -407,23 +386,18 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    // Create a temporary song object and add it to the list
                     const newSong = {
                         id: 'temp-' + Date.now(),
                         title: data.title,
                         artist: data.uploader,
                         cover: data.thumbnail || 'https://via.placeholder.com/180',
-                        audioUrl: data.download_url, // URL to the temp file
+                        audioUrl: data.download_url,
                         duration: data.duration
                     };
                     
                     songs.push(newSong);
                     renderSongs();
-                    
-                    // Automatically play the new song
                     playSong(songs.length - 1);
-                    
-                    // Clear input for next search
                     urlInput.value = '';
                 } else {
                     alert('Error: ' + data.error);
@@ -437,7 +411,6 @@
             }
         }
 
-        // Event listeners
         playPauseBtn.addEventListener('click', togglePlay);
         prevBtn.addEventListener('click', playPrev);
         nextBtn.addEventListener('click', playNext);
@@ -448,18 +421,13 @@
         });
         audio.addEventListener('ended', playNext);
         progressBar.addEventListener('click', seek);
-        
-        // Search button click
         fetchBtn.addEventListener('click', fetchAndPlay);
-        
-        // Allow pressing Enter in the input to trigger search
         urlInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 fetchAndPlay();
             }
         });
 
-        // Initial load of static songs
         loadSongs();
     </script>
 </body>

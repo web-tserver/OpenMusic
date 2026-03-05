@@ -5,15 +5,15 @@ const crypto = require('crypto');
 const youtubedl = require('yt-dlp-exec');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
-// ========== Configuration ==========
+// Temporary download folder
 const DOWNLOAD_DIR = path.join(__dirname, 'temp_downloads');
 if (!fs.existsSync(DOWNLOAD_DIR)) {
     fs.mkdirSync(DOWNLOAD_DIR);
 }
 
-// Clean up old temp files every 5 minutes
+// Clean up old temp files every 10 minutes
 setInterval(() => {
     const now = Date.now();
     fs.readdir(DOWNLOAD_DIR, (err, files) => {
@@ -32,16 +32,14 @@ setInterval(() => {
             });
         }
     });
-}, 5 * 60 * 1000); // every 5 minutes
+}, 10 * 60 * 1000);
 
-// ========== Middleware ==========
-app.use(express.json()); // to parse JSON bodies
-app.use(express.static('public')); // serve static files (HTML, audio, etc.)
-app.use('/downloads', express.static(DOWNLOAD_DIR)); // serve temp audio files
+// Middleware
+app.use(express.json());
+app.use(express.static('public'));
+app.use('/downloads', express.static(DOWNLOAD_DIR));
 
-// ========== API Endpoints ==========
-
-// 1. Get static song list (you can replace this with a database later)
+// Static song list (you can replace with a database later)
 app.get('/api/songs', (req, res) => {
     const songs = [
         {
@@ -49,7 +47,7 @@ app.get('/api/songs', (req, res) => {
             title: 'Song One',
             artist: 'Artist A',
             cover: 'https://via.placeholder.com/180/1db954/ffffff?text=Cover+1',
-            audioUrl: '/audio/song1.mp3' // make sure file exists in public/audio/
+            audioUrl: '/audio/song1.mp3'
         },
         {
             id: 2,
@@ -62,7 +60,7 @@ app.get('/api/songs', (req, res) => {
     res.json(songs);
 });
 
-// 2. Fetch audio from YouTube (or any supported site)
+// Fetch audio from YouTube (or any supported site)
 app.post('/api/fetch-audio', async (req, res) => {
     try {
         const { url } = req.body;
@@ -72,11 +70,9 @@ app.post('/api/fetch-audio', async (req, res) => {
 
         console.log(`Fetching audio from: ${url}`);
 
-        // Generate a unique filename
         const fileId = crypto.randomBytes(8).toString('hex');
         const outputTemplate = path.join(DOWNLOAD_DIR, `${fileId}.%(ext)s`);
 
-        // Use yt-dlp to download the best audio as mp3
         const output = await youtubedl(url, {
             extractAudio: true,
             audioFormat: 'mp3',
@@ -87,7 +83,6 @@ app.post('/api/fetch-audio', async (req, res) => {
             // cookies: path.join(__dirname, 'cookies.txt')
         });
 
-        // Find the actual file that was created
         const files = fs.readdirSync(DOWNLOAD_DIR);
         const downloadedFile = files.find(f => f.startsWith(fileId));
         
@@ -98,7 +93,6 @@ app.post('/api/fetch-audio', async (req, res) => {
         const filePath = path.join(DOWNLOAD_DIR, downloadedFile);
         const stat = fs.statSync(filePath);
 
-        // Respond with metadata and the download URL
         res.json({
             success: true,
             fileId: fileId,
@@ -116,7 +110,6 @@ app.post('/api/fetch-audio', async (req, res) => {
     }
 });
 
-// ========== Start Server ==========
 app.listen(PORT, () => {
-    console.log(`Server running at http://localhost:${PORT}`);
+    console.log(`Server running on port ${PORT}`);
 });
